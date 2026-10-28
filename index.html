@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hours</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hours">
+<meta name="theme-color" content="#f6f2fa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16141a" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<main id="app">
+  <header class="top">
+    <div>
+      <div class="eyebrow" id="today">&nbsp;</div>
+      <h1>Hours</h1>
+    </div>
+    <button class="icon-btn" id="openSettings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.4-2.9a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+    </button>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="card hero" id="meCard">
+    <div class="row">
+      <span class="name" id="meName">Remi</span>
+      <span class="chip" id="chip">–</span>
+    </div>
+    <div class="big"><span id="meWeek">–</span><span class="cap" id="capLabel">/ 19 h</span></div>
+    <div class="bar"><div class="fill" id="meBar"></div></div>
+    <p class="msg" id="meMsg">Connect to see your week.</p>
+    <div class="foot">
+      <div class="state"><i class="dot" id="meDot"></i><div class="st"><span id="meState">–</span><small id="meToday"></small></div></div>
+      <button class="pill" id="meBtn" disabled>Clock in</button>
+    </div>
+  </section>
+
+  <section class="card" id="otherCard">
+    <div class="row">
+      <span class="name" id="otherName">Wife</span>
+      <span class="sub" id="otherWeek">– this week</span>
+    </div>
+    <div class="foot">
+      <div class="state"><i class="dot" id="otherDot"></i><div class="st"><span id="otherState">–</span><small id="otherToday"></small></div></div>
+      <button class="pill" id="otherBtn" disabled>Clock in</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row"><span class="name">38-hour week</span><span class="sub" id="combined">–</span></div>
+    <div class="split"><div class="seg me" id="splitMe"></div><div class="seg other" id="splitOther"></div></div>
+    <div class="legend">
+      <span><i class="sw me"></i><span id="legMe">–</span></span>
+      <span><i class="sw other"></i><span id="legOther">–</span></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row"><span class="name">Recent shifts</span></div>
+    <ul class="shifts" id="shifts"><li class="empty">No shifts yet.</li></ul>
+  </section>
+
+  <p class="updated" id="updated">&nbsp;</p>
+</main>
+
+<dialog id="settings">
+  <form method="dialog" id="settingsForm">
+    <h2>Settings</h2>
+    <label>Secret code<input id="sSecret" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="From Remi's timesheet"></label>
+    <div class="two">
+      <label>Your name<input id="sMe" placeholder="Remi"></label>
+      <label>Second person<input id="sOther" placeholder="Wife"></label>
+    </div>
+    <label>Connection
+      <select id="sMode">
+        <option value="relay">Relay (works anywhere)</option>
+        <option value="direct">Direct server address</option>
+      </select>
+    </label>
+    <label id="sUrlWrap">Server address<input id="sUrl" inputmode="url" autocapitalize="off" placeholder="https://…"></label>
+    <label id="sRelayWrap">Relay server<input id="sRelay" inputmode="url" autocapitalize="off" placeholder="https://ntfy.sh"></label>
+    <div class="actions">
+      <button value="cancel" class="text-btn" formnovalidate>Cancel</button>
+      <button value="save" class="pill filled" id="sSave">Save</button>
+    </div>
+  </form>
+</dialog>
+<script src="app.js"></script>
+</body>
+</html>

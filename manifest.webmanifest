@@ -1,0 +1,27 @@
+{
+  "name": "Hours",
+  "short_name": "Hours",
+  "description": "Clock in and out and see this week's hours for Remi and Wife.",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f2fa",
+  "theme_color": "#6750a4",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
