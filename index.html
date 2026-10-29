@@ -40,7 +40,10 @@
     <p class="msg" id="meMsg">Connect to see your week.</p>
     <div class="foot">
       <div class="state"><i class="dot" id="meDot"></i><div class="st"><span id="meState">–</span><small id="meToday"></small></div></div>
-      <button class="pill" id="meBtn" disabled>Clock in</button>
+    </div>
+    <div class="btns" role="group" aria-label="Clock in or out">
+      <button class="pill act act-in" id="meIn" disabled><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M11 7 9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-8v2h8v14z"/></svg><span class="lbl">Clock in</span></button>
+      <button class="pill act act-out" id="meOut" disabled><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="m17 7-1.4 1.4 2.6 2.6H8v2h10.2l-2.6 2.6L17 17l5-5-5-5zM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4V5z"/></svg><span class="lbl">Clock out</span></button>
     </div>
   </section>
 
@@ -51,7 +54,10 @@
     </div>
     <div class="foot">
       <div class="state"><i class="dot" id="otherDot"></i><div class="st"><span id="otherState">–</span><small id="otherToday"></small></div></div>
-      <button class="pill" id="otherBtn" disabled>Clock in</button>
+    </div>
+    <div class="btns" role="group" aria-label="Clock in or out">
+      <button class="pill act act-in" id="otherIn" disabled><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M11 7 9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-8v2h8v14z"/></svg><span class="lbl">Clock in</span></button>
+      <button class="pill act act-out" id="otherOut" disabled><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="m17 7-1.4 1.4 2.6 2.6H8v2h10.2l-2.6 2.6L17 17l5-5-5-5zM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4V5z"/></svg><span class="lbl">Clock out</span></button>
     </div>
   </section>
 
@@ -88,6 +94,7 @@
     </label>
     <label id="sUrlWrap">Server address<input id="sUrl" inputmode="url" autocapitalize="off" placeholder="https://…"></label>
     <label id="sRelayWrap">Relay server<input id="sRelay" inputmode="url" autocapitalize="off" placeholder="https://ntfy.sh"></label>
+    <p class="ver" id="appVersion"></p>
     <div class="actions">
       <button value="cancel" class="text-btn" formnovalidate>Cancel</button>
       <button value="save" class="pill filled" id="sSave">Save</button>

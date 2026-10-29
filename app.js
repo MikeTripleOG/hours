@@ -1,4 +1,5 @@
 // Hours web app (iPhone PWA). Same backend and relay format as the Android widget.
+const APP_VERSION = '2.0 (two buttons)';
 const $ = id => document.getElementById(id);
 // One-link setup: …/#k=<secret> saves the secret on this device, then removes it from the address bar.
 (() => {
@@ -23,7 +24,7 @@ const S = {
   get url() { return (localStorage.hoursUrl || (servedByServer ? location.origin : '')).replace(/\/+$/, ''); },
   get relay() { return (localStorage.hoursRelay || 'https://ntfy.sh').replace(/\/+$/, ''); },
 };
-let status = null, busy = false;
+let status = null, busy = false, again = null;
 try { status = JSON.parse(localStorage.hoursStatus || 'null'); } catch { }
 
 // ---------- relay crypto (matches server/hours_core.py and the Android app) ----------
@@ -66,24 +67,27 @@ async function send(cmd) {
     const j = await (await http('POST', S.url + '/api/clock', JSON.stringify(cmd))).json();
     if (j.status) save(j.status);
     if (j.ok === false && !/already/.test(j.error || '')) throw new Error(j.error);
+    if (cmd.type === 'clock') results[cmd.id] = { ok: j.ok !== false, error: j.error };
     return;
   }
   await http('POST', `${S.relay}/${await topic('cmd')}`, await encrypt(cmd), false);
 }
+const results = {};   // direct mode: outcome of each tap, by command id
 
 // ---------- queue (taps keep their own time if the phone is offline) ----------
 const queue = () => JSON.parse(localStorage.hoursQueue || '[]');
 const setQueue = q => localStorage.hoursQueue = JSON.stringify(q);
 async function flush() {
-  let q = queue(), sent = false;
-  while (q.length) { await send(q[0]); sent = true; q = q.slice(1); setQueue(q); }
+  let sent = false;
+  for (const c of queue()) { await send(c); sent = true; setQueue(queue().filter(x => x.id !== c.id)); }  // keeps taps added meanwhile
   return sent;
 }
 function save(st) { status = st; localStorage.hoursStatus = JSON.stringify(st); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function sync(lastId) {
+async function sync(lastId, cmd) {
   if (!S.secret) { render(); return showBanner('Tap ⚙︎ and enter the secret code to connect.'); }
+  if (busy) { again = lastId ? { lastId, cmd } : (again || {}); return; }   // a tap during a sync: run it right after
   busy = true; render();
   try {
     const sent = await flush();
@@ -99,21 +103,28 @@ async function sync(lastId) {
       }
     } else save(await fetchStatus());
     hideBanner();
-    const lc = status?.relay?.last_command;
-    if (lastId && lc?.id === lastId && !lc.ok) showBanner(lc.error || 'That tap was not logged.', true);
+    const lc = S.mode === 'relay' ? status?.relay?.last_command : null;
+    const res = lastId && (S.mode === 'relay' ? (lc?.id === lastId ? lc : null) : results[lastId]);
+    if (res && cmd) {
+      const who = cmd.person === 'other' ? S.other : S.me;
+      if (res.ok) showBanner(`${who} clocked ${cmd.action} at ${new Date(cmd.at_ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`, false, 'good', 5000);
+      else if (res.code === 409 || /already/.test(res.error || '')) showBanner(`All good — ${who} is already clocked ${cmd.action}. Nothing changed.`, false, 'calm', 7000);
+      else showBanner(res.error || 'That tap was not logged.', true);
+    }
   } catch (e) {
     showBanner((queue().length ? 'Saved your tap — it will be sent with its original time when back online. ' : 'Offline: ') + e.message, true);
   }
   busy = false; render();
+  if (again) { const a = again; again = null; sync(a.lastId, a.cmd); }
 }
 
-async function tap(person) {
-  const st = status || {};
-  const isIn = person === 'me' ? st.clocked_in : st.other_clocked_in;
-  const cmd = { id: crypto.randomUUID().slice(0, 12), type: 'clock', person, action: isIn ? 'out' : 'in', at_ms: Date.now(), source: 'iphone' };
+// Two separate buttons per person: action is always exactly what the button says.
+async function tap(person, action) {
+  const cmd = { id: crypto.randomUUID().slice(0, 12), type: 'clock', person, action, at_ms: Date.now(), source: 'iphone' };
   setQueue([...queue(), cmd]);
   if (navigator.vibrate) navigator.vibrate(10);
-  await sync(cmd.id);
+  render();
+  await sync(cmd.id, cmd);
 }
 
 // ---------- render ----------
@@ -121,19 +132,30 @@ const fmt = h => { const m = Math.round(Math.max(h || 0, 0) * 60); return `${Mat
 const num = h => (Math.round(Math.max(h || 0, 0) * 10) / 10).toString();
 const time = iso => iso ? new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
 const day = iso => new Date(iso).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-function showBanner(t, err) { const b = $('banner'); b.textContent = t; b.className = 'banner' + (err ? ' err' : ''); b.hidden = false; }
-function hideBanner() { $('banner').hidden = true; }
+let bannerTimer;
+function showBanner(t, err, kind, ms) {
+  const b = $('banner'); clearTimeout(bannerTimer);
+  b.textContent = t; b.className = 'banner' + (err ? ' err' : kind ? ' ' + kind : ''); b.hidden = false;
+  if (ms) bannerTimer = setTimeout(hideBanner, ms);
+}
+function hideBanner() { clearTimeout(bannerTimer); $('banner').hidden = true; }
 
 function render() {
   $('today').textContent = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
   $('meName').textContent = S.me; $('otherName').textContent = S.other;
   const st = status, q = queue();
   const pendingFor = p => q.some(c => c.person === p);
-  for (const [p, btn] of [['me', $('meBtn')], ['other', $('otherBtn')]]) {
-    const isIn = st && (p === 'me' ? st.clocked_in : st.other_clocked_in);
-    btn.textContent = pendingFor(p) ? 'Sending…' : isIn ? 'Clock out' : 'Clock in';
-    btn.className = 'pill' + (isIn ? ' out' : '');
-    btn.disabled = !S.secret || !st || busy || pendingFor(p);
+  for (const p of ['me', 'other']) {
+    const isIn = !!st && !!(p === 'me' ? st.clocked_in : st.other_clocked_in);
+    const pend = q.filter(c => c.person === p).pop();
+    for (const action of ['in', 'out']) {
+      const btn = $(p + (action === 'in' ? 'In' : 'Out'));
+      const noop = !!st && (action === 'in') === isIn;          // already in this state: still tappable, just quieter
+      btn.querySelector('.lbl').textContent = pend?.action === action ? 'Sending…' : action === 'in' ? 'Clock in' : 'Clock out';
+      btn.className = 'pill act act-' + action + (noop ? ' quiet' : ' main');
+      btn.setAttribute('aria-pressed', String(noop));
+      btn.disabled = !S.secret || !st || !!pend;
+    }
   }
   if (!st) return;
   const cap = st.cap_hours || 19, wk = st.week_hours || 0, lvl = st.alert_level;
@@ -166,6 +188,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 // ---------- settings ----------
 function openSettings() {
+  $('appVersion').textContent = 'Hours web app v' + APP_VERSION;
   $('sSecret').value = S.secret; $('sMe').value = localStorage.hoursMe || ''; $('sOther').value = localStorage.hoursOther || '';
   $('sMode').value = S.mode; $('sUrl').value = localStorage.hoursUrl || (servedByServer ? location.origin : '');
   $('sRelay').value = localStorage.hoursRelay || 'https://ntfy.sh'; toggleFields(); $('settings').showModal();
@@ -180,8 +203,10 @@ $('settings').addEventListener('close', () => {
   localStorage.hoursMode = $('sMode').value; localStorage.hoursUrl = $('sUrl').value.trim(); localStorage.hoursRelay = $('sRelay').value.trim();
   localStorage.removeItem('hoursStatus'); status = null; sync();
 });
-$('meBtn').onclick = () => tap('me');
-$('otherBtn').onclick = () => tap('other');
+$('meIn').onclick = () => tap('me', 'in');
+$('meOut').onclick = () => tap('me', 'out');
+$('otherIn').onclick = () => tap('other', 'in');
+$('otherOut').onclick = () => tap('other', 'out');
 addEventListener('online', () => sync());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
 setInterval(() => { if (!document.hidden && !busy) sync(); }, 60000);
